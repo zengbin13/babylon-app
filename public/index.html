@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ECharts 3D Bar Chart Surface Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-gl/dist/echarts-gl.min.js"></script>
+  </head>
+  <body>
+    <div id="main" style="width: 600px; height: 400px"></div>
+    <script type="text/javascript">
+      // 初始化ECharts实例
+      var myChart = echarts.init(document.getElementById('main'));
+
+      // 定义六个顶点的高度
+      var data = [
+        { x: 0, y: 0, z: 119.14, label: '料位1' }, // 料位1
+        { x: 1, y: 0, z: 137.25, label: '料位2' }, // 料位2
+        { x: 0, y: 1, z: 117, label: '料位3' }, // 料位3
+        { x: 1, y: 1, z: 141.25, label: '料位4' }, // 料位4
+        { x: 0.5, y: 0.5, z: 130, label: '料位5' }, // 料位5
+        { x: 1, y: 0.5, z: 135, label: '料位6' }, // 料位6
+      ];
+
+      // 准备插值函数
+      function interpolateHeight(x, y, points) {
+        var totalWeight = 0;
+        var totalZ = 0;
+        for (var i = 0; i < points.length; i++) {
+          var point = points[i];
+          var distance = Math.sqrt((x - point.x) ** 2 + (y - point.y) ** 2);
+          var weight = 1 / (distance + 0.00001); // 防止除以0
+          totalWeight += weight;
+          totalZ += point.z * weight;
+        }
+        return totalZ / totalWeight;
+      }
+
+      // 生成更密集的曲面数据
+      var surfaceData = [];
+      for (var i = 0; i <= 1; i += 0.05) {
+        // 减小步长增加密度
+        for (var j = 0; j <= 1; j += 0.05) {
+          // 减小步长增加密度
+          var z = interpolateHeight(i, j, data);
+          surfaceData.push([i, j, z]);
+        }
+      }
+
+      // 配置ECharts选项
+      var option = {
+        tooltip: {},
+        visualMap: {
+          show: false,
+          dimension: 2,
+          min: Math.min.apply(
+            null,
+            data.map((d) => d.z)
+          ),
+          max: Math.max.apply(
+            null,
+            data.map((d) => d.z)
+          ),
+          inRange: {
+            color: ['blue', 'red'],
+          },
+        },
+        xAxis3D: {
+          type: 'value',
+          min: 0,
+          max: 1,
+          name: 'X轴',
+        },
+        yAxis3D: {
+          type: 'value',
+          min: 0,
+          max: 1,
+          name: 'Y轴',
+        },
+        zAxis3D: {
+          type: 'value',
+          name: '高度',
+        },
+        grid3D: {
+          viewControl: {
+            projection: 'orthographic',
+          },
+        },
+        series: [
+          {
+            type: 'bar3D',
+            data: surfaceData,
+            shading: 'color',
+            label: {
+              show: false,
+            },
+            itemStyle: {
+              opacity: 1,
+              borderWidth: 1,
+              borderColor: 'black',
+            },
+            barSize: 1, // 设置柱子的大小
+          },
+          {
+            type: 'scatter3D',
+            data: data.map((point) => [point.x, point.y, point.z]),
+            symbolSize: 10,
+            label: {
+              show: true,
+              formatter: function (params) {
+                var point = data[params.dataIndex];
+                return point.label + '\n' + point.z;
+              },
+              textStyle: {
+                fontSize: 12,
+                borderWidth: 1,
+              },
+            },
+            itemStyle: {
+              color: 'red',
+            },
+          },
+        ],
+      };
+
+      // 使用指定的配置项和数据显示图表
+      myChart.setOption(option);
+    </script>
+  </body>
+</html>
